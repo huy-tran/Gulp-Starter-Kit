@@ -14,12 +14,14 @@ var sass = require('gulp-sass');
 var autoprefixer = require('gulp-autoprefixer');
 var sourcemaps = require('gulp-sourcemaps');
 var uglify = require('gulp-uglify');
+var rename = require('gulp-rename');
+var concat = require('gulp-concat');
 
 /**
  * Browserify Options
  */
 var customOpts = {
-  entries: ['./src/js/main.js'],
+  entries: ['./src/js/app.js'],
   debug: true
 };
 var opts = assign({}, watchify.args, customOpts);
@@ -28,14 +30,14 @@ var b = watchify(browserify(opts));
 // Add Transformations
 b.transform('babelify', {presets: 'es2015'});
 
-gulp.task('js', bundle);
+gulp.task('js:app', bundle);
 b.on('update', bundle);
 b.on('log', gutil.log);
 
 function bundle() {
   return b.bundle()
     .on('error', gutil.log.bind(gutil, gutil.colors.red('BROWSERIFY ERROR')))
-    .pipe(source('main.js'))
+    .pipe(source('app.js'))
     .pipe(buffer())
     .pipe(uglify())
     .pipe(sourcemaps.init({loadMaps: true}))
@@ -43,6 +45,15 @@ function bundle() {
     .pipe(gulp.dest('./build/js'))
     .pipe(browserSync.reload({stream: true}));
 }
+/**
+ * Vendors Task
+ */
+gulp.task('js:vendors',[], function(){
+  return gulp.src('./src/js/vendors/*.js')
+    .pipe(concat('vendors.min.js'))
+    .pipe(uglify())
+    .pipe(gulp.dest('./build/js/'));
+});
 /**
  * Browser-Sync Task
  */
@@ -89,4 +100,4 @@ gulp.task('watch', function(){
   gulp.watch('src/sass/**/*.scss', ['styles']);
 });
 
-gulp.task('default',['styles', 'html', 'watch', 'browserSync', 'js']);
+gulp.task('default',['styles', 'html', 'watch', 'browserSync', 'js:app', 'js:vendors']);
